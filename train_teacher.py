@@ -115,7 +115,7 @@ def main():
 
     # tensorboard
     # logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
-    writer = SummaryWriter(logdir=opt.tb_folder, flush_secs=2)
+    writer = SummaryWriter(opt.tb_folder)
 
     # routine
     for epoch in range(1, opt.epochs + 1):

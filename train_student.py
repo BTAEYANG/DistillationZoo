@@ -149,7 +149,7 @@ def main():
 
     # tensorboard logger
     # logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
-    writer = SummaryWriter(logdir=opt.tb_folder, flush_secs=2)
+    writer = SummaryWriter(opt.tb_folder)
 
     # dataloader
     if opt.dataset == 'cifar100':

@@ -22,13 +22,13 @@ def get_data_folder():
     """
     return server-dependent path to store the data
     """
-    hostname = socket.gethostname()
-    if hostname.startswith('visiongpu'):
-        data_folder = '/data/vision/phillipi/rep-learn/datasets'
-    elif hostname.startswith('yonglong-home'):
-        data_folder = '/home/yonglong/Data/data'
-    else:
-        data_folder = './data/'
+    # hostname = socket.gethostname()
+    # if hostname.startswith('visiongpu'):
+    #     data_folder = '/data/vision/phillipi/rep-learn/datasets'
+    # elif hostname.startswith('yonglong-home'):
+    #     data_folder = '/home/yonglong/Data/data'
+    # else:
+    data_folder = '/home/lab265/lab265/datasets/CIFAR100'
 
     if not os.path.isdir(data_folder):
         os.makedirs(data_folder)
@@ -37,7 +37,8 @@ def get_data_folder():
 
 
 class CIFAR100Instance(datasets.CIFAR100):
-    """CIFAR100Instance Dataset.
+    """
+        CIFAR100 Instance Dataset.
     """
     def __getitem__(self, index):
         if self.train:
@@ -108,7 +109,7 @@ def get_cifar100_dataloaders(batch_size=128, num_workers=8, is_instance=False):
 
 class CIFAR100InstanceSample(datasets.CIFAR100):
     """
-    CIFAR100Instance+Sample Dataset
+    CIFAR100 Instance+Sample Dataset
     """
     def __init__(self, root, train=True,
                  transform=None, target_transform=None,

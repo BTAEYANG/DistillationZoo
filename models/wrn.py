@@ -156,7 +156,8 @@ if __name__ == '__main__':
     import torch
 
     x = torch.randn(2, 3, 32, 32)
-    net = wrn_40_2(num_classes=100)
+    net = wrn_16_2(num_classes=100)
+    print(net)
     feats, logit = net(x, is_feat=True, preact=True)
 
     for f in feats:

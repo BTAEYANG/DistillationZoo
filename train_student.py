@@ -9,12 +9,12 @@ import argparse
 import socket
 import time
 
-import tensorboard_logger as tb_logger
+# import tensorboard_logger as tb_logger
+from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.optim as optim
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
-
 
 from models import model_dict
 from models.util import Embed, ConvReg, LinearEmbed
@@ -33,13 +33,12 @@ from helper.pretrain import init
 
 
 def parse_option():
-
-    hostname = socket.gethostname()
+    # hostname = socket.gethostname()
 
     parser = argparse.ArgumentParser('argument for training')
 
     parser.add_argument('--print_freq', type=int, default=100, help='print frequency')
-    parser.add_argument('--tb_freq', type=int, default=500, help='tb frequency')
+    parser.add_argument('--tb_freq', type=int, default=500, help='tensorboard frequency')
     parser.add_argument('--save_freq', type=int, default=40, help='save frequency')
     parser.add_argument('--batch_size', type=int, default=64, help='batch_size')
     parser.add_argument('--num_workers', type=int, default=8, help='num of workers to use')
@@ -94,12 +93,15 @@ def parse_option():
         opt.learning_rate = 0.01
 
     # set the path according to the environment
-    if hostname.startswith('visiongpu'):
-        opt.model_path = '/path/to/my/student_model'
-        opt.tb_path = '/path/to/my/student_tensorboards'
-    else:
-        opt.model_path = './save/student_model'
-        opt.tb_path = './save/student_tensorboards'
+    # if hostname.startswith('visiongpu'):
+    #     opt.model_path = '/path/to/my/student_model'
+    #     opt.tb_path = '/path/to/my/student_tensorboards'
+    # else:
+    #     opt.model_path = './save/student_model'
+    #     opt.tb_path = './save/student_tensorboards'
+
+    opt.model_path = './save/models'
+    opt.tb_path = './tb_logs'
 
     iterations = opt.lr_decay_epochs.split(',')
     opt.lr_decay_epochs = list([])
@@ -146,7 +148,8 @@ def main():
     opt = parse_option()
 
     # tensorboard logger
-    logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
+    # logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
+    writer = SummaryWriter(logdir=opt.tb_folder, flush_secs=2)
 
     # dataloader
     if opt.dataset == 'cifar100':
@@ -178,11 +181,14 @@ def main():
     trainable_list = nn.ModuleList([])
     trainable_list.append(model_s)
 
+    # CrossEntropyLoss using for Classification loss
     criterion_cls = nn.CrossEntropyLoss()
+    # KL divergence loss, original knowledge distillation
     criterion_div = DistillKL(opt.kd_T)
     if opt.distill == 'kd':
         criterion_kd = DistillKL(opt.kd_T)
     elif opt.distill == 'hint':
+        # Other knowledge distillation loss
         criterion_kd = HintLoss()
         regress_s = ConvReg(feat_s[opt.hint_layer].shape, feat_t[opt.hint_layer].shape)
         module_list.append(regress_s)
@@ -233,7 +239,7 @@ def main():
         init_trainable_list.append(connector)
         init_trainable_list.append(model_s.get_feat_modules())
         criterion_kd = ABLoss(len(feat_s[1:-1]))
-        init(model_s, model_t, init_trainable_list, criterion_kd, train_loader, logger, opt)
+        init(model_s, model_t, init_trainable_list, criterion_kd, train_loader, writer, opt)
         # classification
         module_list.append(connector)
     elif opt.distill == 'factor':
@@ -245,7 +251,7 @@ def main():
         init_trainable_list = nn.ModuleList([])
         init_trainable_list.append(paraphraser)
         criterion_init = nn.MSELoss()
-        init(model_s, model_t, init_trainable_list, criterion_init, train_loader, logger, opt)
+        init(model_s, model_t, init_trainable_list, criterion_init, train_loader, writer, opt)
         # classification
         criterion_kd = FactorTransfer()
         module_list.append(translator)
@@ -258,16 +264,16 @@ def main():
         # init stage training
         init_trainable_list = nn.ModuleList([])
         init_trainable_list.append(model_s.get_feat_modules())
-        init(model_s, model_t, init_trainable_list, criterion_kd, train_loader, logger, opt)
+        init(model_s, model_t, init_trainable_list, criterion_kd, train_loader, writer, opt)
         # classification training
         pass
     else:
         raise NotImplementedError(opt.distill)
 
     criterion_list = nn.ModuleList([])
-    criterion_list.append(criterion_cls)    # classification loss
-    criterion_list.append(criterion_div)    # KL divergence loss, original knowledge distillation
-    criterion_list.append(criterion_kd)     # other knowledge distillation loss
+    criterion_list.append(criterion_cls)  # classification loss
+    criterion_list.append(criterion_div)  # KL divergence loss, original knowledge distillation
+    criterion_list.append(criterion_kd)  # other knowledge distillation loss
 
     # optimizer
     optimizer = optim.SGD(trainable_list.parameters(),
@@ -298,14 +304,18 @@ def main():
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 
-        logger.log_value('train_acc', train_acc, epoch)
-        logger.log_value('train_loss', train_loss, epoch)
+        # logger.log_value('train_acc', train_acc, epoch)
+        # logger.log_value('train_loss', train_loss, epoch)
+        # log epoch train loss
+        writer.add_scalars("train", {"acc": train_acc, "loss": train_loss}, epoch)
 
-        test_acc, tect_acc_top5, test_loss = validate(val_loader, model_s, criterion_cls, opt)
+        test_acc, test_acc_top5, test_loss = validate(val_loader, model_s, criterion_cls, opt)
 
-        logger.log_value('test_acc', test_acc, epoch)
-        logger.log_value('test_loss', test_loss, epoch)
-        logger.log_value('test_acc_top5', tect_acc_top5, epoch)
+        # logger.log_value('test_acc', test_acc, epoch)
+        # logger.log_value('test_loss', test_loss, epoch)
+        # logger.log_value('test_acc_top5', test_acc_top5, epoch)
+
+        writer.add_scalars("validate", {"acc": test_acc, "top5": test_acc_top5, "loss": test_loss}, epoch)
 
         # save the best model
         if test_acc > best_acc:

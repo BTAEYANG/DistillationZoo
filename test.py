@@ -53,8 +53,8 @@ if __name__ == '__main__':
             if args.gpu:
                 image = image.cuda()
                 label = label.cuda()
-                print('GPU INFO.....')
-                print(torch.cuda.memory_summary(), end='')
+                # print('GPU INFO.....')
+                # print(torch.cuda.memory_summary(), end='')
 
 
             output = net(image)
@@ -69,9 +69,9 @@ if __name__ == '__main__':
             #compute top1
             correct_1 += correct[:, :1].sum()
 
-    if args.gpu:
-        print('GPU INFO.....')
-        print(torch.cuda.memory_summary(), end='')
+    # if args.gpu:
+    #     print('GPU INFO.....')
+    #     print(torch.cuda.memory_summary(), end='')
 
     print()
     print("Top 1 err: ", 1 - correct_1 / len(cifar100_test_loader.dataset))

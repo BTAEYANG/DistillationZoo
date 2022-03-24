@@ -64,7 +64,7 @@ def train(epoch):
         if epoch <= args.warm:
             warmup_scheduler.step()
 
-        progress_bar(batch_index, len(cifar100_training_loader.dataset), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+        progress_bar(batch_index, n_iter, 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss / (batch_index + 1), 100. * (train_correct / len(cifar100_training_loader.dataset)),
                         train_correct, len(cifar100_training_loader.dataset)))
 

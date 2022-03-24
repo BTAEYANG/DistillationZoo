@@ -21,6 +21,7 @@ from utilTools.utils import get_network, get_training_dataloader, get_test_datal
 
 
 def train(epoch):
+    global batch_index
     net.train()
     train_loss = 0.0  # train loss
     train_correct = 0.0

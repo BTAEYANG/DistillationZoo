@@ -64,14 +64,14 @@ def train(epoch):
         if epoch <= args.warm:
             warmup_scheduler.step()
 
+        progress_bar(batch_index, len(cifar100_training_loader.dataset), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                     % (train_loss / (batch_index + 1), 100. * (train_correct / len(cifar100_training_loader.dataset)),
+                        train_correct, len(cifar100_training_loader.dataset)))
+
     for name, param in net.named_parameters():
         layer, attr = os.path.splitext(name)
         attr = attr[1:]
         writer.add_histogram("{}/{}".format(layer, attr), param, epoch)
-
-    progress_bar(batch_index, len(cifar100_training_loader.dataset), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                 % (train_loss / (batch_index + 1), 100. * (train_correct / len(cifar100_training_loader.dataset)),
-                    train_correct, len(cifar100_training_loader.dataset)))
 
 
 @torch.no_grad()

@@ -22,9 +22,9 @@ from utilTools.utils import get_network, get_training_dataloader, get_test_datal
 
 def train(epoch):
     net.train()
-    train_loss = 0.0  # train error
+    train_loss = 0.0  # train loss
     train_correct = 0.0
-
+    total = 0
     for batch_index, (images, labels) in enumerate(cifar100_training_loader):
 
         if args.gpu:
@@ -39,16 +39,17 @@ def train(epoch):
 
         train_loss += loss.item()
         _, train_predicted = outputs.max(1)
+        total += labels.size(0)
         train_correct += train_predicted.eq(labels).sum()
 
-        n_iter = (epoch - 1) * len(cifar100_training_loader) + batch_index + 1
-
-        last_layer = list(net.children())[-1]
-        for name, para in last_layer.named_parameters():
-            if 'weight' in name:
-                writer.add_scalar('LastLayerGradients/grad_norm2_weights', para.grad.norm(), n_iter)
-            if 'bias' in name:
-                writer.add_scalar('LastLayerGradients/grad_norm2_bias', para.grad.norm(), n_iter)
+        # n_iter = (epoch - 1) * len(cifar100_training_loader) + batch_index + 1
+        #
+        # last_layer = list(net.children())[-1]
+        # for name, para in last_layer.named_parameters():
+        #     if 'weight' in name:
+        #         writer.add_scalar('LastLayerGradients/grad_norm2_weights', para.grad.norm(), n_iter)
+        #     if 'bias' in name:
+        #         writer.add_scalar('LastLayerGradients/grad_norm2_bias', para.grad.norm(), n_iter)
 
         # print('Training Epoch: {epoch} [{trained_samples}/{total_samples}]\tLoss: {:0.4f}\tLR: {:0.6f}'.format(
         #     loss.item(),
@@ -59,19 +60,18 @@ def train(epoch):
         # ))
 
         # update training loss for each iteration
-        writer.add_scalar('Train/loss', loss.item(), n_iter)
+        # writer.add_scalar('Train/loss', loss.item(), n_iter)
 
         if epoch <= args.warm:
             warmup_scheduler.step()
 
-        progress_bar(batch_index, n_iter, 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                     % (train_loss / (batch_index + 1), 100. * (train_correct / len(cifar100_training_loader.dataset)),
-                        train_correct, len(cifar100_training_loader.dataset)))
+        progress_bar(batch_index, len(cifar100_training_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                     % (train_loss / (batch_index + 1), 100. * (train_correct / total), train_correct, total))
 
-    for name, param in net.named_parameters():
-        layer, attr = os.path.splitext(name)
-        attr = attr[1:]
-        writer.add_histogram("{}/{}".format(layer, attr), param, epoch)
+    # for name, param in net.named_parameters():
+    #     layer, attr = os.path.splitext(name)
+    #     attr = attr[1:]
+    #     writer.add_histogram("{}/{}".format(layer, attr), param, epoch)
 
 
 @torch.no_grad()

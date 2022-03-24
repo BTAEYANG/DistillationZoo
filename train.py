@@ -71,7 +71,7 @@ def train(epoch):
 
     progress_bar(batch_index, len(cifar100_training_loader.dataset), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                  % (train_loss / (batch_index + 1), 100. * (train_correct / len(cifar100_training_loader.dataset)),
-                    train_correct, cifar100_training_loader.dataset))
+                    train_correct, len(cifar100_training_loader.dataset)))
 
 
 @torch.no_grad()

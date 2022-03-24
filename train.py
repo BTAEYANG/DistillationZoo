@@ -42,47 +42,29 @@ def train(epoch):
         total += labels.size(0)
         train_correct += train_predicted.eq(labels).sum()
 
-        # n_iter = (epoch - 1) * len(cifar100_training_loader) + batch_index + 1
-        #
-        # last_layer = list(net.children())[-1]
-        # for name, para in last_layer.named_parameters():
-        #     if 'weight' in name:
-        #         writer.add_scalar('LastLayerGradients/grad_norm2_weights', para.grad.norm(), n_iter)
-        #     if 'bias' in name:
-        #         writer.add_scalar('LastLayerGradients/grad_norm2_bias', para.grad.norm(), n_iter)
-
-        # print('Training Epoch: {epoch} [{trained_samples}/{total_samples}]\tLoss: {:0.4f}\tLR: {:0.6f}'.format(
-        #     loss.item(),
-        #     optimizer.param_groups[0]['lr'],
-        #     epoch=epoch,
-        #     trained_samples=batch_index * args.b + len(images),
-        #     total_samples=len(cifar100_training_loader.dataset)
-        # ))
-
-        # update training loss for each iteration
-        # writer.add_scalar('Train/loss', loss.item(), n_iter)
-
         if epoch <= args.warm:
             warmup_scheduler.step()
 
         progress_bar(batch_index, len(cifar100_training_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss / (batch_index + 1), 100. * (train_correct / total), train_correct, total))
+    avg_train_loss = train_loss / len(cifar100_training_loader.dataset)
+    avg_train_acc = (train_correct / len(cifar100_training_loader.dataset)) * 100
+    print('Train set: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f} %'.format(
+        epoch,
+        avg_train_loss,
+        avg_train_acc
+    ))
 
-    # for name, param in net.named_parameters():
-    #     layer, attr = os.path.splitext(name)
-    #     attr = attr[1:]
-    #     writer.add_histogram("{}/{}".format(layer, attr), param, epoch)
+    return avg_train_loss, avg_train_acc
 
 
 @torch.no_grad()
-def eval_training(epoch=0, tb=True):
-    start = time.time()
+def eval_training(epoch):
     net.eval()
-
-    test_loss = 0.0  # cost function error
+    test_loss = 0.0  # test function loss
     test_correct = 0.0
-
-    for (images, labels) in cifar100_test_loader:
+    total = 0
+    for batch_index, (images, labels) in cifar100_test_loader:
 
         if args.gpu:
             images = images.cuda()
@@ -93,27 +75,21 @@ def eval_training(epoch=0, tb=True):
 
         test_loss += loss.item()
         _, test_predicted = outputs.max(1)
+        total += labels.size(0)
         test_correct += test_predicted.eq(labels).sum()
 
-    finish = time.time()
-    # if args.gpu:
-    #     print('GPU INFO.....')
-    #     print(torch.cuda.memory_summary(), end='')
-    print('Evaluating Network.....')
-    print('Test set: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f} %, Time consumed:{:.2f}s'.format(
+        progress_bar(batch_index, len(cifar100_test_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                     % (test_loss / (batch_index + 1), 100. * (test_correct / total), test_correct, total))
+
+    avg_test_loss = test_loss / len(cifar100_test_loader.dataset)
+    avg_test_acc = (test_correct.float() / len(cifar100_test_loader.dataset)) * 100
+    print('Test set: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f} %'.format(
         epoch,
-        test_loss / len(cifar100_test_loader.dataset),
-        (test_correct.float() / len(cifar100_test_loader.dataset)) * 100,
-        finish - start
+        avg_test_loss,
+        avg_test_acc
     ))
-    print()
 
-    # add informations to tensorboard
-    if tb:
-        writer.add_scalar('Test/Average loss', test_loss / len(cifar100_test_loader.dataset), epoch)
-        writer.add_scalar('Test/Accuracy', test_correct.float() / len(cifar100_test_loader.dataset), epoch)
-
-    return test_correct.float() / len(cifar100_test_loader.dataset)
+    return avg_test_loss, avg_test_acc
 
 
 if __name__ == '__main__':

@@ -7,7 +7,6 @@ author baiyu
 """
 
 import os
-import sys
 import argparse
 import time
 import torch
@@ -16,15 +15,14 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
 from conf import settings
-from utils import get_network, get_training_dataloader, get_test_dataloader, WarmUpLR, most_recent_folder, \
+from utilTools.tools import progress_bar
+from utilTools.utils import get_network, get_training_dataloader, get_test_dataloader, WarmUpLR, most_recent_folder, \
     most_recent_weights, last_epoch, best_acc_weights
 
 
 def train(epoch):
-    start = time.time()
     net.train()
-
-    train_loss = 0.0  # cost function error
+    train_loss = 0.0  # train error
     train_correct = 0.0
 
     for batch_index, (images, labels) in enumerate(cifar100_training_loader):
@@ -71,14 +69,9 @@ def train(epoch):
         attr = attr[1:]
         writer.add_histogram("{}/{}".format(layer, attr), param, epoch)
 
-    finish = time.time()
-
-    print('Train set: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f} %, Time consumed:{:.2f}s'.format(
-        epoch,
-        train_loss / len(cifar100_training_loader.dataset),
-        (train_correct.float() / len(cifar100_training_loader.dataset)) * 100,
-        finish - start
-    ))
+    progress_bar(batch_index, len(cifar100_training_loader.dataset), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                 % (train_loss / (batch_index + 1), 100. * (train_correct / len(cifar100_training_loader.dataset)),
+                    train_correct, cifar100_training_loader.dataset))
 
 
 @torch.no_grad()

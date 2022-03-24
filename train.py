@@ -47,15 +47,8 @@ def train(epoch):
 
         progress_bar(batch_index, len(cifar100_training_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (train_loss / (batch_index + 1), 100. * (train_correct / total), train_correct, total))
-    avg_train_loss = train_loss / len(cifar100_training_loader.dataset)
-    avg_train_acc = (train_correct / len(cifar100_training_loader.dataset)) * 100
-    print('Train set: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f} %'.format(
-        epoch,
-        avg_train_loss,
-        avg_train_acc
-    ))
 
-    return avg_train_loss, avg_train_acc
+    return train_loss / (batch_index + 1), 100. * (train_correct / total)
 
 
 @torch.no_grad()
@@ -64,7 +57,7 @@ def eval_training(epoch):
     test_loss = 0.0  # test function loss
     test_correct = 0.0
     total = 0
-    for batch_index, (images, labels) in cifar100_test_loader:
+    for batch_index, (images, labels) in enumerate(cifar100_test_loader):
 
         if args.gpu:
             images = images.cuda()
@@ -81,15 +74,7 @@ def eval_training(epoch):
         progress_bar(batch_index, len(cifar100_test_loader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
                      % (test_loss / (batch_index + 1), 100. * (test_correct / total), test_correct, total))
 
-    avg_test_loss = test_loss / len(cifar100_test_loader.dataset)
-    avg_test_acc = (test_correct.float() / len(cifar100_test_loader.dataset)) * 100
-    print('Test set: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f} %'.format(
-        epoch,
-        avg_test_loss,
-        avg_test_acc
-    ))
-
-    return avg_test_loss, avg_test_acc
+    return test_loss / (batch_index + 1), 100. * (test_correct / total)
 
 
 if __name__ == '__main__':
